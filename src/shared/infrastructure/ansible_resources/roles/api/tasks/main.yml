@@ -1,0 +1,29 @@
+- name: "Docker compose file"
+  template:
+    src: "docker-compose-api.yml.j2"
+    dest: /home/{{ ansible_user }}/docker-compose-api.yml
+    mode: 0655
+
+- name: "Entrypoiny file"
+  template:
+    src: "entrypoint.sh.j2"
+    dest: /home/{{ ansible_user }}/entrypoint.sh
+    mode: 0655
+
+- name: "Checking if directory exist"
+  stat:
+    path: "{{ api_volume_path }}"
+  register: api_directory_exist
+
+- name: Creates volume directory
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/{{ api_volume_path }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: www-data
+    mode: 0755
+    recurse: yes
+  when: not api_directory_exist.stat.exists
+
+- name: "Deploy docker compose"
+  command: "docker-compose -f /home/{{ ansible_user }}/docker-compose-api.yml up -d"

@@ -1,0 +1,32 @@
+services:
+  dynamodb-local:
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "{{db_port}}:8000"
+    restart: unless-stopped
+    networks:
+      - dynamodb_admin_proxy_network
+    volumes:
+      - "/home/{{ ansible_user }}/{{ db_volume_path }}:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+
+  dynamodb-admin:
+    image: "aaronshaf/dynamodb-admin"
+    container_name: dynamodb-admin
+    depends_on:
+      - dynamodb-local
+    restart: unless-stopped
+    ports:
+      - "{{dynamodb_admin_port}}:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:{{ db_port }}
+      - AWS_REGION={{ AWS_DEFAULT_REGION }}
+    networks:
+      - dynamodb_admin_proxy_network
+
+networks:
+  dynamodb_admin_proxy_network:
+    name: {{ dynamodb_admin_network }}
+    external: true

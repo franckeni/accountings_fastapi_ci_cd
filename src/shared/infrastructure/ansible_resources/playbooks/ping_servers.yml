@@ -1,0 +1,15 @@
+---
+- hosts: dev, prod
+  become: true
+  gather_facts: false
+  remote_user: ubuntu
+
+  tasks:
+
+  - name: Ping current host IP
+    ansible.builtin.ping:
+    register: test_api_
+
+  - name: Display ping result
+    ansible.builtin.debug:
+      msg: "{{ test_api_.ping }}"

@@ -1,0 +1,9 @@
+---
+- hosts: dev, prod
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: Remove unused images
+    shell: |
+      docker images -q -f reference={{ DELETE_IMAGES_REFERENCE }} | xargs --no-run-if-empty docker rmi -f;

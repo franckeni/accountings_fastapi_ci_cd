@@ -1,0 +1,7 @@
+ansible_python_interpreter: /usr/bin/python3
+api_service_name: accountings_api
+api_port: 8080
+api_network: haen_stam_network
+api_host: "192.168.56.11"
+api_volume_path: "accountings_api"
+domain_name: localhost

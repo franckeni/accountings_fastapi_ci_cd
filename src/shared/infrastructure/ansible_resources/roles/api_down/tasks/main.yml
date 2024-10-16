@@ -1,0 +1,8 @@
+- name: "Checking if directory exist"
+  stat:
+    path: "/home/{{ ansible_user }}/docker-compose-api.yml"
+  register: api_compose_file_exist
+
+- name: "Deploy docker compose"
+  command: "docker-compose -f /home/{{ ansible_user }}/docker-compose-api.yml down"
+  when: api_compose_file_exist.stat.exists

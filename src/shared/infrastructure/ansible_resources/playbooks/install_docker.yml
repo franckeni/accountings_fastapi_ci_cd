@@ -1,0 +1,18 @@
+---
+- hosts: dev, prod
+  become: true
+  gather_facts: yes
+  remote_user: ubuntu
+  vars:
+    docker_install_compose: true
+    pip_install_packages:
+      - name: docker
+
+  pre_tasks:
+    - name: install python3-pip
+      package: name=python3-pip state=present update_cache=yes
+
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+    - network

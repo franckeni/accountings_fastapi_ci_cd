@@ -1,0 +1,37 @@
+services:
+
+  {{ api_service_name }}:
+    image: {{ DOCKER_CURRENT_IMAGE }}
+    container_name: {{API_CONTAINER_NAME}}
+    entrypoint: ["./entrypoint.sh"]
+    ports:
+      - "{{ api_port }}:8080"
+
+    environment:
+      AWS_ACCESS_KEY_ID: {{ AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: {{ AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: {{ AWS_DEFAULT_REGION }}
+      AWS_USERPOOLID: {{ AWS_USERPOOLID }}
+      AWS_USERPOOLWEBCLIENTID: {{ AWS_USERPOOLWEBCLIENTID }}
+      APP_ENVIRONMENT: {{ APP_ENVIRONMENT }}
+      ALLOWED_ORIGINS: {{ ALLOWED_ORIGINS }}
+      DYNAMODB_URL: {{ DYNAMODB_URL }}
+      TABLE_NAME: {{ TABLE_NAME }}
+      # BASE
+      API_PATH_VERSION_PREFIX: {{ API_PATH_VERSION_PREFIX }}
+      PROJECT_NAME: {{ PROJECT_NAME }}
+      APP_VERSION: {{ APP_VERSION }}
+      ADMIN_EMAIL: {{ ADMIN_EMAIL }}
+      ansible_user: {{ ansible_user }}
+    networks:
+      - api_proxy_network
+    #volumes:
+    #  - /home/{{ ansible_user }}/{{ api_volume_path }}:/home/app
+    command: 
+      ["uvicorn", "shared.infrastructure.fastapi.main:api", "--host", "0.0.0.0", "--reload", "--port", "8080"]
+
+networks:
+  api_proxy_network:
+    name: {{ api_network }}
+    external: true
+

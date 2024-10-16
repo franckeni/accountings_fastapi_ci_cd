@@ -1,0 +1,5 @@
+---
+- hosts: dev, prod
+  become: true
+  roles:
+    - { role: update_hosts }

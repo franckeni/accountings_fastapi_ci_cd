@@ -1,0 +1,23 @@
+- name: "Docker compose file"
+  template:
+    src: "docker-compose-admin.yml.j2"
+    dest: /home/{{ ansible_user }}/docker-compose-admin.yml
+    mode: 0655
+
+- name: "Checking if directory exist"
+  stat:
+    path: "{{ db_volume_path }}"
+  register: ddb_directory_exist
+
+- name: creates multiple directories in one task
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/{{ db_volume_path }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: www-data
+    mode: 0755
+    recurse: yes
+  when: not ddb_directory_exist.stat.exists
+
+- name: "Deploy docker compose"
+  command: "docker-compose -f /home/{{ ansible_user }}/docker-compose-admin.yml up -d"
