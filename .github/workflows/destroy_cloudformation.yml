@@ -1,0 +1,41 @@
+name: Destroy cloud resources API & UI
+on: workflow_dispatch
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: eu-west-1
+  APP_ENVIRONMENT: development
+  ALLOWED_ORIGINS: '*'
+  DYNAMODB_URL: ''
+  TABLE_NAME: accountings-api
+  UI_STACK_NAME: accountings-ui
+jobs:
+  destroy-global-infrastructure:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/backend/app/infrastructures
+    steps:
+      - uses: actions/checkout@v4
+      - name: Destroy global infrastructure ui
+        run:  aws cloudformation delete-stack --stack-name ${APP_ENVIRONMENT}-${UI_STACK_NAME} --region ${AWS_DEFAULT_REGION}
+      - name: Destroy global infrastructure api
+        run:  aws cloudformation delete-stack --stack-name ${APP_ENVIRONMENT}-${TABLE_NAME} --region ${AWS_DEFAULT_REGION}
+  destroy-api:
+    needs: [destroy-global-infrastructure]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Serverless Framework
+        run: npm install -g serverless
+      - name: Install NPM dependencies
+        run: npm install
+      - name: Destroy
+        run: sls remove --stage  ${APP_ENVIRONMENT} --region ${AWS_DEFAULT_REGION} --verbose

@@ -1,0 +1,111 @@
+name: ACCOUNTINGS API deploy
+on: workflow_dispatch
+
+env:  # new
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: eu-west-1
+  APP_ENVIRONMENT: development
+  ALLOWED_ORIGINS: '*'
+  DYNAMODB_URL: ''
+  TABLE_NAME: accountings-api
+  # BASE
+  API_V1_PREFIX: /api/v1
+  DEBUG: False
+  PROJECT_NAME: IKOKU ERP API
+  VERSION: 0.2.0
+  DESCRIPTION: This API was built for AWS SERVERLESS 
+  ADMIN_EMAIL: franckafosoule@gmail.com
+  ITEMS_PER_USER: 50
+  ACCESS_TOKEN_EXPIRE_MINUTES: 30  # 30 minutes
+  REFRESH_TOKEN_EXPIRE_MINUTES: 10080 # 7 days :> 60 * 24 * 7
+  PRODUCTION: False
+
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.12]
+        poetry-version: [1.7.1]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: services/backend/tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Run tests
+        #run: poetry run pytest integration/tests.py --cov=./ --cov-report=xml
+        run: poetry run pytest test/inte/tests.py 
+      #- name: Upload coverage to Codecov
+      #  uses: codecov/codecov-action@v3
+      #  with:
+      #    token: {{ secrets.CODECOV_TOKEN }}
+  code-quality:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.12]
+        poetry-version: [1.7.1]
+        node-version: [20]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Run black
+        run: poetry run black . --check
+      - name: Run isort
+        run: poetry run isort . --profile black
+      - name: Run flake8
+        run: poetry run flake8 .
+      - name: Run bandit
+        run: poetry run bandit .
+  terraform: 
+    needs: [ test, code-quality ]
+    name: Deploy Site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Terraform Init
+        uses: hashicorp/terraform-github-actions/init@v0.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_ACTION_WORKING_DIR: 'terraform'
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Terraform Validate
+        uses: hashicorp/terraform-github-actions/validate@v0.3.7
+
+      - name: Terraform Apply
+        uses: hashicorp/terraform-github-actions/apply@v0.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_ACTION_WORKING_DIR: 'terraform'
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
